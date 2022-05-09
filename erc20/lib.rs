@@ -46,13 +46,7 @@ mod erc20 {
         #[ink(topic)]
         value:u64,
     }
-    #[ink(event)]
-     pub struct Vote{
-         #[ink(topic)]
-         holder:AccountId,
-        #[ink(topic)]
-        amount:u64,
-     }
+    
     
     #[derive(scale::Encode,scale::Decode,Clone,SpreadLayout,PackedLayout)]
     #[cfg_attr(
@@ -184,15 +178,7 @@ mod erc20 {
             assert_eq!(caller == self.owner,true);
             self._mint_token(to, value )
         }
-       #[ink(message)]
-        pub fn mint_votes_by_member(&mut self , member:AccountId,amount:u64) ->bool{
-            let member_balance = self.balance_of_or_zero(&member);
-            if member_balance <=0 {
-                return false;
-            }
-            self._mint_votes(to,amount)
-            
-        }
+       
         #[ink(message)]
         pub fn destroy_token_by_owner(&mut self ,from:AccountId,value:u64,) ->bool {
             assert_eq!(value > 0 , true);
