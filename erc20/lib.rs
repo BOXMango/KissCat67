@@ -164,7 +164,13 @@ mod erc20 {
             self.transfer_from_to(from,to,value )
 
         }
-       
+        #[ink(message)]
+        pub fn transfer_owner(&mut self, to:AccountId,) -> bool{
+            let caller = self.env().caller();
+            assert_eq!(caller == self.owner, true);
+            self.owner = to;
+            true
+        }
 
         #[ink(message)]
         pub fn mint_token_by_owner(&mut self, to:AccountId, value:u64, ) ->bool {
