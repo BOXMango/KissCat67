@@ -191,7 +191,34 @@ mod erc20 {
             self._destroy_token(from,value)
         }
 
+        fn transfer_from_to(
+            &mut self,
+            from: AccountId,
+            to: AccountId,
+            value:u64,
+        ) -> bool {
+            let from_balance = self.balance_of_or_zero(&from);
+            if from_balance < value {
+                return false
+            }
+            self.balances.insert(from , from_balance - value);
+            let to_balance = self.balance_of_or_zero(&to);
+            self.balances.insert(to, to_balance + value);
+            self.env().emit_event(Transfer{
+                from: Some(from),
+                to:Some(to),
+                value,
+            });
+            true
+        }
         
+        fn balance_of_or_zero(&self, owner:&AccountId) -> u64{
+            *self.balances.get(owner).unwrap_or(&0)
+        }
+        
+        fn allowance_of_or_zero(&self, owner: &AccountId, spender:&AccountId) ->u64{
+            *self.allowances.get(&(*owner,*spender)).unwrap_or(&0)
+        }
         
         fn _mint_token(
             &mut self,
