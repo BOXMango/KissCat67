@@ -153,7 +153,17 @@ mod erc20 {
             });
             true
         }
-        
+        #[ink(message)]
+        pub fn transfer_from(&mut self, from:AccountId, to:AccountId,value:u64) ->bool{
+            let caller = self.env().caller();
+            let allowance = self.allowance_of_or_zero(&from, &caller);
+            if allowance < value {
+                return false
+            }
+            self.allowances.insert((from,caller),allowance - value );
+            self.transfer_from_to(from,to,value )
+
+        }
        
 
         #[ink(message)]
