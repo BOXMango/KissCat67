@@ -46,7 +46,13 @@ mod erc20 {
         #[ink(topic)]
         value:u64,
     }
-
+    #[ink(event)]
+     pub struct Vote{
+         #[ink(topic)]
+         holder:AccountId,
+        #[ink(topic)]
+        amount:u64,
+     }
     
     #[derive(scale::Encode,scale::Decode,Clone,SpreadLayout,PackedLayout)]
     #[cfg_attr(
