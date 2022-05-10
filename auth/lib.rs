@@ -63,7 +63,125 @@ mod auth {
             }
         }
         
+        #[ink(message)]
+        pub fn has_permission(& self, account_id: AccountId, contract_name: String, function_name: String)  -> bool {
+            return self._has_permission(account_id, contract_name, function_name);
+        }
+
+        fn _has_permission(& self, account_id: AccountId, contract_name: String, function_name: String)  -> bool {
+            if let Some(action) = self.actions.get(&(contract_name, function_name)) {
+                if let Some(_) = self.actions_auths.get(&(account_id, action.action_id)) {
+                    return true;
+                }            
+            }
+           return false;
+        }
+
+        #[ink(message)]
+        pub fn grant_permission(& mut self, account_id: AccountId, contract_name: String, function_name: String) ->  bool {
+            let caller = self.env().caller();
+            assert!(self.owner == caller || self._has_permission(caller, String::from("auth"),String::from("grant")));
+            if let Some(action) = self.actions.get(&(contract_name, function_name)){
+                let a: Action = Action{
+                    action_id: action.action_id,
+                    action_title: action.action_title.clone(),
+                    contract_name: action.contract_name.clone(),
+                    function_name: action.function_name.clone(),
+                };
+                self.actions_auths.insert((account_id, action.action_id), a);
+                return true;
+           }
+           return false;
+        }
+
+        #[ink(message)]
+        pub fn transfer_owner(
+            &mut self,
+            to: AccountId,
+        ) -> bool {
+            assert!(self.owner == self.env().caller());
+            self.owner = to;
+            true
+        }
+
+
+        #[ink(message)]
+        pub fn revoke_permission(& mut self,account_id: AccountId,contract_name: String, function_name: String) -> bool {
+            let caller = self.env().caller();
+            assert!(self.owner == caller || self._has_permission(caller, String::from("auth"),String::from("grant")));
+            if let Some(action) = self.actions.get(&(contract_name, function_name)){
+                self.actions_auths.take(&(account_id, action.action_id));
+                return true;
+           }
+           return false;
+        }
+
         
+        #[ink(message)]
+        pub fn register_action(& mut self,contract_name: String, function_name: String, action_title: String) -> bool {
+            let caller = self.env().caller();
+            assert!(self.owner == caller || self._has_permission(caller, String::from("auth"),String::from("register")));
+            let action_id = self.action_id;
+            self.action_id += 1;
+            let action = Action{
+                action_id,
+                action_title: action_title.clone(),
+                contract_name: contract_name.clone(),
+                function_name: function_name.clone(),
+            };
+            self.actions.insert((contract_name, function_name), action);
+            true
+        }
+
+
+        #[ink(message)]
+        pub fn cancel_action(& mut self,contract_name: String, function_name: String) -> bool {
+            let caller = self.env().caller();
+            assert!(self.owner == caller || self._has_permission(caller, String::from("auth"),String::from("register")));
+            self.actions.take(&(contract_name, function_name));
+            true
+        }
+
+        #[ink(message)]
+        pub fn show_actions_by_contract(& self, contract_name: String) -> Vec<Action> {
+        
+            let mut actions_vec: Vec<Action> = Vec::new();
+            for ((cname, _), val) in &self.actions {
+                if  *cname == contract_name {
+                    let v: Action = Action {
+                        action_id: val.action_id,
+                        action_title: val.action_title.clone(),
+                        contract_name: val.contract_name.clone(),
+                        function_name: val.function_name.clone(),
+                    };
+                    actions_vec.push(v);
+                }
+            }
+            actions_vec
+        }
+
+        #[ink(message)]
+        pub fn show_actions_by_user(& self, owner: AccountId) -> Vec<Action> {
+        
+            let mut actions_vec: Vec<Action> = Vec::new();
+            for ((account_id, _), val) in &self.actions_auths {
+                if *account_id == owner {
+                    let v: Action = Action {
+                        action_id: val.action_id,
+                        action_title: val.action_title.clone(),
+                        contract_name: val.contract_name.clone(),
+                        function_name: val.function_name.clone(),
+                    };
+                    actions_vec.push(v);
+                }
+            }
+            actions_vec
+        }
+
+        #[ink(message)]
+        pub fn get_auth_owner(& self) -> AccountId {
+            return self.owner;
+        }
     }
 
    
