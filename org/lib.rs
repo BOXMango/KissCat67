@@ -586,6 +586,20 @@ mod org {
             assert_eq!(org_manager.org_id, 1);
         }
 
+        #[ink::test]
+        fn add_member_works() {
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            // Create a new contract instance.
+            let mut org_manager = OrgManager::new(accounts.alice,1, accounts.alice);
+            let bob_name = String::from("bob");
+            org_manager.add_dao_member(bob_name,accounts.bob);
+            let mut member = org_manager.get_dao_members_list()[0];
+            assert_eq!(member, accounts.bob);
+
+        }
+
         
     }
         
