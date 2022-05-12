@@ -643,7 +643,27 @@ mod org {
             assert_eq!(members.len(), 0);
         }
 
-        
+        #[ink::test]
+        fn resign_works() {
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            // Create a new contract instance.
+            let mut org_manager = OrgManager::new(accounts.alice,1, accounts.alice);
+            let bob_name = String::from("bob");
+            org_manager.add_dao_member(bob_name,accounts.bob);
+            let eve_name = String::from("eve");
+            org_manager.add_dao_member(eve_name,accounts.eve);
+            let mut members = org_manager.get_dao_members_list();
+            assert_eq!(members.len(), 2);
+            org_manager.resign_member(accounts.bob);
+            members = org_manager.get_dao_members_list();
+            assert_eq!(members.len(), 1);
+            org_manager.resign_member(accounts.eve);
+            members = org_manager.get_dao_members_list();
+            assert_eq!(members.len(), 0);
+        }
+      
         
     }
         
