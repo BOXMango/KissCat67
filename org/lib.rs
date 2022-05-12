@@ -563,6 +563,30 @@ mod org {
         }
 
     }
+#[cfg(test)]
+    mod tests {
+        /// Imports all the definitions from the outer scope so we can use them here.
+        use super::*;
+        use ink_env::{
+            call,
+            test,
+        };
+        use ink_lang as ink;
 
+        #[ink::test]
+        fn new_org_works() {
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            // Create a new contract instance.
+            // FIXME: need auth contract here, use alice instead to solve compile issue.
+            let mut org_manager = OrgManager::new(accounts.alice,1, accounts.alice);
+
+            assert_eq!(org_manager.owner, accounts.alice);
+            assert_eq!(org_manager.org_id, 1);
+        }
+
+        
+    }
         
 }
