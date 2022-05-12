@@ -599,7 +599,21 @@ mod org {
             assert_eq!(member, accounts.bob);
 
         }
+        #[ink::test]
+        fn add_moderator_works() {
+            let accounts =
+                ink_env::test::default_accounts::<ink_env::DefaultEnvironment>()
+                    .expect("Cannot get accounts");
+            // Create a new contract instance.
+            let mut org_manager = OrgManager::new(accounts.alice,1, accounts.alice);
+            let bob_name = String::from("bob");
+            org_manager.add_dao_moderator(bob_name,accounts.bob);
+            let mut member = org_manager.get_dao_moderator_list()[0];
+            assert_eq!(member, accounts.bob);
 
+        }
+
+       
         
     }
         
