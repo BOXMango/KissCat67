@@ -98,7 +98,469 @@ mod org {
 
     impl OrgManager {
 
+        #[ink(constructor)]
+        pub fn new(_owner: AccountId,org_id:u64,auth_contract_address: AccountId) -> Self {
+            Self {
+                org_id:org_id,
+                owner:_owner,
+                moderators: StorageHashMap::default(),
+                members: StorageHashMap::default(),
+                applying_members: StorageHashMap::default(),
+                auth_contract_address:auth_contract_address,
+                can_free_add_member: false,
+                is_member: false,
+                is_moderator:false,
+                is_owner:false,
+            }
+        }
+
+
+        #[ink(message)]
+        pub fn get_dao_owner(&self) -> AccountId {
+            self.owner
+        }
+
+        #[ink(message)]
+        pub fn get_can_free_add_member(&self) -> bool {
+            self.can_free_add_member
+        }
+
+        #[ink(message)]
+        pub fn set_can_free_add_member(&mut self,can_free_add_member:bool) -> bool {
+            self.can_free_add_member = can_free_add_member;
+            self.can_free_add_member
+        }
+
+        pub fn get_auth_by_address(&self, address:AccountId) -> Auth {
+            let  auth_instance: Auth = ink_env::call::FromAccountId::from_account_id(address);
+            auth_instance
+
+        }
+
+
+        #[ink(message)]
+        pub fn get_orgid(&self) -> u64 {
+            self.org_id
+        }
         
+        #[ink(message)]
+        pub fn get_dao_size(&self) -> u64 {
+            let mut v:alloc::vec::Vec<AccountId> = alloc::vec::Vec::new();
+
+            self.moderators.keys();
+            for key in self.moderators.keys() {
+                v.push(*key)
+            }
+
+            self.members.keys();
+            for key in self.members.keys() {
+                v.push(*key)
+            }
+            
+            return v.len() as u64;
+        }
+
+        #[ink(message)]
+        pub fn get_dao_moderator_list(&self) -> alloc::vec::Vec<AccountId> {
+            self.moderators.keys();
+            let mut v:alloc::vec::Vec<AccountId> = alloc::vec::Vec::new();
+            for key in self.moderators.keys() {
+                v.push(*key)
+            }
+            v
+
+        }
+
+
+        #[ink(message)]
+        pub fn get_dao_members_list(&self) -> alloc::vec::Vec<AccountId> {
+            self.members.keys();
+            let mut v:alloc::vec::Vec<AccountId> = alloc::vec::Vec::new();
+            for key in self.members.keys() {
+                v.push(*key)
+            }
+            v
+        }
+
+
+        #[ink(message)]
+        pub fn get_dao_moderator_detail_list(&self) -> alloc::vec::Vec<(AccountId, String)> {
+            self.moderators.keys();
+            let mut v:alloc::vec::Vec<(AccountId, String)> = alloc::vec::Vec::new();
+            for key in self.moderators.keys() {
+
+                let value = self.moderators.get(key).unwrap().clone();
+
+                v.push((*key,value))
+            }
+            v
+
+        }
+
+        #[ink(message)]
+        pub fn get_dao_member_detail_list(&self) -> alloc::vec::Vec<(AccountId, String)> {
+            self.members.keys();
+            let mut v:alloc::vec::Vec<(AccountId, String)> = alloc::vec::Vec::new();
+            for key in self.members.keys() {
+
+                let value = self.members.get(key).unwrap().clone();
+
+                v.push((*key,value))
+            }
+            v
+
+        }
+
+
+        #[ink(message)]
+        pub fn get_dao_apply_member_detail_list(&self) -> alloc::vec::Vec<(AccountId, String)> {
+            self.applying_members.keys();
+            let mut v:alloc::vec::Vec<(AccountId, String)> = alloc::vec::Vec::new();
+            for key in self.applying_members.keys() {
+
+                let value = self.applying_members.get(key).unwrap().clone();
+
+                v.push((*key,value))
+            }
+            v.reverse();
+            v
+
+        }
+
+        // FIXME: this implementation is incorrect when the added one is already a member of the dao.
+        #[ink(message)]
+        pub fn add_dao_moderator(&mut self,name:String,moderator: AccountId) -> bool  {
+            let caller = self.env().caller();
+
+            
+            if caller != self.owner {
+                return false;
+            }
+
+
+
+            let  mut auth_instance = self.get_auth_by_address(self.auth_contract_address);
+           // assert!(self.owner == caller || self._has_permission(caller, String::from("auth"),String::from("grant")));
+            auth_instance.grant_permission(moderator, String::from("vote"), String::from("new"));
+            auth_instance.grant_permission(moderator, String::from("vote"), String::from("vote"));
+
+
+            match self.moderators.insert(moderator,name) {
+                Some(_) => { false},
+                None => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(AddDAOModeratorEvent{
+                        moderator,
+                        org_id,});
+                    true
+                }
+            }
+        }
+
+
+        #[ink(message)]
+        pub fn add_dao_moderator_without_grant(&mut self,name:String,moderator: AccountId) -> bool  {
+            let caller = self.env().caller();
+
+
+            if caller != self.owner {
+                return false;
+            }
+
+            match self.moderators.insert(moderator,name) {
+                Some(_) => { false},
+                None => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(AddDAOModeratorEvent{
+                        moderator,
+                        org_id,});
+                    true
+                }
+            }
+        }
+
+        // FIXME: this implementation is incorrect when the added one is already a moderator of the dao.
+        #[ink(message)]
+        pub fn add_dao_member(&mut self,name:String,member: AccountId) -> bool {
+
+            let caller = self.env().caller();
+
+            if self.can_free_add_member == false {
+                return false
+            }
+
+            let  mut auth_instance = self.get_auth_by_address(self.auth_contract_address);
+           // assert!(auth_instance.has_permission(caller, String::from("auth"),String::from("grant")));
+            auth_instance.grant_permission(member, String::from("vote"), String::from("vote"));
+
+            match self.members.insert(member,name) {
+                Some(_) => { false},
+                None => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(AddDAOMemberEvent{
+                        member,
+                        org_id,
+                    });
+                    true
+                }
+            }
+
+        }
+
+
+        
+        pub fn add_dao_member_private(&mut self,name:String,member: AccountId) -> bool {
+
+            let caller = self.env().caller();
+            let  mut auth_instance = self.get_auth_by_address(self.auth_contract_address);
+           // assert!(auth_instance.has_permission(caller, String::from("auth"),String::from("grant")));
+            auth_instance.grant_permission(member, String::from("vote"), String::from("vote"));
+
+            match self.members.insert(member,name) {
+                Some(_) => { false},
+                None => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(AddDAOMemberEvent{
+                        member,
+                        org_id,
+                    });
+                    true
+                }
+            }
+
+        }
+
+
+        #[ink(message)]
+        pub fn batch_add_dao_member(&mut self, members:BTreeMap<String, AccountId>) -> bool {
+            for (name, accountId) in &members {
+                self.add_dao_member(String::from(name),*accountId);
+            }
+            true
+            
+        }
+
+
+        #[ink(message)]
+        pub fn remove_dao_moderator(&mut self,member: AccountId) -> bool  {
+
+            let caller = self.env().caller();
+
+            if caller !=  self.owner {
+                return false;
+            }
+
+
+            match self.moderators.take(&member) {
+                None => { false}
+                Some(_) => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(RemoveDAOModeratorEvent{
+                        moderator:member,
+                        org_id,
+                    });
+                    true
+                }
+            }
+
+
+        }
+
+        // FIXME: This implementation is incorrect!!! Need re-factor this part, only moderators can remove members
+        #[ink(message)]
+        pub fn remove_dao_member(&mut self, member: AccountId) -> bool  {
+
+
+            match self.members.take(&member) {
+                None => { false}
+                Some(_) => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(RemoveDAOMemberEvent{
+                        member:member,
+                        org_id:org_id,
+                    });
+                    true
+                }
+            }
+
+        }
+
+
+        // #[ink(message)]
+        // pub fn resign(&mut self,member: AccountId) -> bool  {
+
+
+        //     if self.members.contains_key(&member) {
+        //         self.members.take(&member);
+        //         return true;
+        //     };
+
+        //     if self.moderators.contains_key(&member) {
+        //         self.moderators.take(&member);
+        //         return true;
+        //     };
+        //     return false;
+        // }
+
+        #[ink(message)]
+        pub fn resign_member(&mut self,member: AccountId) -> bool  {
+
+
+            if self.members.contains_key(&member) {
+                self.members.take(&member);
+                return true;
+            };
+
+            return false;
+        }
+
+
+        #[ink(message)]
+        pub fn resign_moderator(&mut self,moderator: AccountId) -> bool  {
+
+            if self.moderators.contains_key(&moderator) {
+                self.moderators.take(&moderator);
+                return true;
+            };
+            return false;
+        }
+
+
+
+        #[ink(message)]
+        pub fn who_am_i(&mut self) -> (bool,bool,bool)  {
+
+            let caller = self.env().caller();
+           
+            if self.members.contains_key(&caller) {
+                self.is_member =  true;
+            } else {
+                self.is_member =  false;
+            }
+
+            if self.moderators.contains_key(&caller) {
+                self.is_moderator =  true;
+            } else {
+                self.is_moderator =  false;
+            }
+            
+            if caller == self.owner {
+                self.is_owner = true;
+            } else {
+                self.is_owner = false;
+            }
+
+            return (self.is_member,self.is_moderator,self.is_owner)
+            
+        }
+
+        #[ink(message)]
+        pub fn check_role_by_account(&self, user: AccountId) -> (bool,bool,bool)  {
+
+            let mut is_member = false;
+            let mut is_moderator = false;
+            let mut is_owner = false;
+            if self.members.contains_key(&user) {
+                is_member =  true;
+            }
+
+            if self.moderators.contains_key(&user) {
+                is_moderator =  true;
+            }
+
+            if user == self.owner {
+                is_owner = true;
+            }
+
+            return (is_member, is_moderator, is_owner)
+
+        }
+
+
+        #[ink(message)]
+        pub fn transfer_ownership(&mut self,new_owner: AccountId) -> bool  {
+
+            let caller = self.env().caller();
+
+            // only owner can transfer the ownership of the org
+            if caller != self.owner {
+                return false;
+            }
+
+            if self.members.contains_key(&new_owner) {
+                self.remove_dao_member(new_owner);
+                self.add_dao_moderator(self.members.get(&new_owner).unwrap().clone(), new_owner);
+            } else if !self.moderators.contains_key(&new_owner) {
+                    return false;
+            }
+
+            self.owner = new_owner;
+            return true;
+        }
+        #[ink(message)]
+        pub fn apply_member(&mut self,name:String,member: AccountId) -> bool {
+            match self.applying_members.insert(member,name) {
+                Some(_) => { false},
+                None => {
+                    let org_id = self.org_id;
+                    self.env().emit_event(ApplyDAOMemberEvent{
+                        member,
+                        org_id,
+                    });
+                    true
+                }
+            }
+
+        }
+
+
+   
+        pub fn check_authority(&self, caller:AccountId) -> bool {
+
+                let moderator_list = self.get_dao_moderator_list();
+
+                if caller == self.owner {
+                    return true;
+                }
+                for key in moderator_list {
+                    let moderator = key;
+                    if caller == moderator {
+                        return true;
+                    }
+                }
+                return false;
+
+        }
+
+
+        #[ink(message)]
+        pub fn approve_member(&mut self,name:String,member: AccountId) -> bool {
+
+            let caller = self.env().caller();
+
+            let can_operate = self.check_authority(caller);
+
+            if can_operate == false {
+                return false;
+            }
+
+            if self.applying_members.contains_key(&member) {
+                let caller_new = self.env().caller();
+                self.add_dao_member_private(name,member);
+                self.applying_members.take(&member);
+                let org_id = self.org_id;
+
+                self.env().emit_event(ApproveDAOMemberEvent{
+                    member,
+                    org_id,
+                    approver:caller_new,
+                });
+
+                return true;
+            };
+            return false;
+
+        }
 
     }
 
