@@ -25,6 +25,9 @@ mod erc20_test {
             }
         }
 
-       
+       #[ink(message)]
+        pub fn transfer_in_erc20(&mut self, to: AccountId, value: u64) -> bool {
+            self.erc20.transfer(to, value)
+        }
     }
 }
