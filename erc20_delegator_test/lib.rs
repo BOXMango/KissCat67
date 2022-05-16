@@ -81,5 +81,37 @@ mod erc20_delegator_test {
             return *self.template_map.get(&index).unwrap()
         }
 
+        #[ink(message)]
+        pub fn instance_by_template(&mut self, index: u64, initial_supply: u64, decimals: u8, controller: AccountId) -> bool {
+            assert_eq!(self.instance_index + 1 > self.instance_index, true);
+            let total_balance = Self::env().balance();
+            assert_eq!(total_balance >= 20, true);
+
+            // query template info
+            let template = self.template_map.get(&index).unwrap();
+
+            // instance erc20
+            let erc_instance = Erc20::new(initial_supply, decimals, controller)
+                .endowment(total_balance / 4)
+                .code_hash(template.erc20_code_hash)
+                .instantiate()
+                .expect("failed at instantiating the `Erc20` contract");
+
+            // instance erc20 test
+            let erc_test_instance = Erc20Test::new(erc_instance.clone())
+                .endowment(total_balance / 4)
+                .code_hash(template.erc20_test_code_hash)
+                .instantiate()
+                .expect("failed at instantiating the `Erc20` contract");
+
+            // put instance
+            self.instance_map.insert(self.instance_index, DAOInstance {
+                owner: controller,
+                erc20: erc_instance,
+                erc20_test: erc_test_instance,
+            });
+            self.instance_index += 1;
+            true
+        }
     }
 }
