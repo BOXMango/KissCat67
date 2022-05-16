@@ -76,5 +76,10 @@ mod erc20_delegator_test {
             true
         }
 
+        #[ink(message)]
+        pub fn query_all_template(&self, index: u64) -> DAOTemplate {
+            return *self.template_map.get(&index).unwrap()
+        }
+
     }
 }
