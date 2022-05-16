@@ -120,5 +120,10 @@ mod erc20_delegator_test {
             instance.erc20.transfer(to, value)
         }
 
+        #[ink(message)]
+        pub fn transfer_by_erc20_test_in_erc20(&mut self, index: u64, to: AccountId, value: u64) -> bool {
+            let instance = self.instance_map.get_mut(&index).unwrap();
+            instance.erc20_test.transfer_in_erc20(to, value)
+        }
     }
 }
