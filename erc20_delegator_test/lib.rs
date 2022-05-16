@@ -62,6 +62,19 @@ mod erc20_delegator_test {
             };
             instance
         }
-          
+     #[ink(message)]
+        pub fn add_template(&mut self, erc20_code_hash: Hash, erc20_test_code_hash: Hash) -> bool {
+            assert_eq!(self.template_index + 1 > self.template_index, true);
+            let from = self.env().caller();
+            
+            self.template_map.insert(self.template_index, DAOTemplate {
+                owner: from,
+                erc20_code_hash,
+                erc20_test_code_hash,
+            });
+            self.template_index += 1;
+            true
+        }
+
     }
 }
