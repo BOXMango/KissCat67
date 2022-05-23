@@ -112,4 +112,79 @@ mod base {
             }
         }
     }
+    /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
+    /// module and test functions are marked with a `#[test]` attribute.
+    /// The below code is technically just normal Rust code.
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use ink_lang as ink;
+
+        #[ink::test]
+        fn test_name() {
+            let mut base = Base::default();
+
+            base.set_name("SubDAO".to_string());
+
+            let dbg_msg = format!("name is {}", base.get_name());
+            ink_env::debug_println!("{}", &dbg_msg );
+
+            assert_eq!(base.get_name(), "SubDAO");
+        }
+
+        #[ink::test]
+        fn test_logo() {
+            let mut base = Base::default();
+
+            base.set_logo("https://example.com/logo.jpg".to_string());
+
+            let dbg_msg = format!("logo is {}", base.get_logo());
+            ink_env::debug_println!("{}", &dbg_msg );
+
+            assert_eq!(base.get_logo(), "https://example.com/logo.jpg");
+        }
+
+        #[ink::test]
+        fn test_desc() {
+            let mut base = Base::default();
+
+            base.set_desc("This is the one to rule all!".to_string());
+
+            let dbg_msg = format!("name is {}", base.get_desc());
+            ink_env::debug_println!("{}", &dbg_msg );
+
+            assert_eq!(base.get_desc(), "This is the one to rule all!");
+        }
+
+        #[ink::test]
+        fn test_all() {
+
+            let accounts =ink_env::test::default_accounts::<ink_env::DefaultEnvironment>().expect("Cannot get accounts");
+
+            let mut base = Base::default();
+
+            base.init_base("SubDAO".to_string(), "http://example.com/logo.jpg".to_string(), "This is the one to rule all!".to_string());
+
+            let dbg_msg = format!("name is {}", base.get_name());
+            ink_env::debug_println!("{}", &dbg_msg );
+
+            assert_eq!(base.get_name(), "SubDAO");
+            assert_eq!(base.get_logo(), "http://example.com/logo.jpg");
+            assert_eq!(base.get_desc(), "This is the one to rule all!");
+            assert_eq!(base.get_creator(), accounts.alice);
+
+            let dbg_msg2 = format!("name is {:?}", base.get_creator());
+            ink_env::debug_println!("{}", &dbg_msg2 );
+        }
+
+
+        #[ink::test]
+        fn test_meanless() {
+            let dbg_msg = format!("name is eth");
+            ink_env::debug_println!("{}", &dbg_msg );
+
+            let eth_name = String::from("eth");
+            assert_eq!(eth_name.clone(), "eth");
+        }
+    }
 }
