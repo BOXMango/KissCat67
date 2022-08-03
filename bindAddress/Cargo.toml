@@ -38,5 +38,6 @@ std = [
     "scale/std",
     "scale-info/std",
     "erc20/std",
+    
 ]
 ink-as-dependency = []
