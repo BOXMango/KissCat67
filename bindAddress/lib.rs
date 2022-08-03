@@ -49,6 +49,7 @@ mod erc20 {
     feature = "std",
     derive(scale_info::TypeInfo, ink_storage::traits::StorageLayout)
     )]
+    
     pub struct DisplayInfo {
         name: String,
         symbol: String,
