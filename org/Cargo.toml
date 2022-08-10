@@ -37,4 +37,5 @@ std = [
     "scale-info/std",
      "auth/std",
 ]
+
 ink-as-dependency = []
